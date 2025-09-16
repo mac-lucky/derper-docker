@@ -25,7 +25,7 @@ jobs:
       dockerhub_image: "maclucky/derper"
       ghcr_image: "ghcr.io/mac-lucky/derper"
       upstream_repo: "tailscale/tailscale"
-      version_strip_prefix: "v"
+      version_strip_prefix: ""
       build_arg_name: "DERP_VERSION"
       enable_version_check: true
       enable_schedule_build: true
