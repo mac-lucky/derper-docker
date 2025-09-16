@@ -1,0 +1,34 @@
+name: Docker Image Test (Reusable Workflow)
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Runs "every Monday" (see https://crontab.guru)
+    - cron: '0 0 * * MON'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    uses: mac-lucky/actions-shared-workflows/.github/workflows/weekly-docker-builder-reusable.yml@master
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+    with:
+      app_name: derper
+      dockerhub_image: maclucky/derper
+      ghcr_image: ghcr.io/mac-lucky/derper
+      version_api_url: https://api.github.com/repos/tailscale/tailscale/releases/latest
+      version_json_path: .tag_name
+      version_prefix: v
+      build_args: |
+        {
+          "DERP_VERSION": "VERSION_PLACEHOLDER"
+        }
+      enable_schedule: true
+      check_existing_image: true
+      registry_to_check: ghcr

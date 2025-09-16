@@ -1,0 +1,35 @@
+name: Test Reusable Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_version:
+        description: 'Test with specific version (optional)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test-build:
+    uses: mac-lucky/actions-shared-workflows/.github/workflows/weekly-docker-builder-reusable.yml@master
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+    with:
+      app_name: derper-test
+      dockerhub_image: maclucky/derper-test
+      ghcr_image: ghcr.io/mac-lucky/derper-test
+      version_api_url: https://api.github.com/repos/tailscale/tailscale/releases/latest
+      version_json_path: .tag_name
+      version_prefix: v
+      build_args: |
+        {
+          "DERP_VERSION": "VERSION_PLACEHOLDER"
+        }
+      enable_schedule: false
+      check_existing_image: false
+      registry_to_check: ghcr
