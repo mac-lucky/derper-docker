@@ -1,8 +1,9 @@
 # Derper
 
-[![docker workflow](https://github.com/mac-lucky/derper-docker/actions/workflows/docker-image.yml/badge.svg)](https://hub.docker.com/r/maclucky/derper)
-[![docker pulls](https://img.shields.io/docker/pulls/maclucky/derper.svg?color=brightgreen)](https://hub.docker.com/r/maclucky/derper)
-[![platfrom](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-brightgreen)](https://hub.docker.com/r/maclucky/derper/tags)
+[![Docker Pulls](https://img.shields.io/docker/pulls/maclucky/derper)](https://hub.docker.com/r/maclucky/derper)
+[![Docker Image Version](https://img.shields.io/docker/v/maclucky/derper/latest)](https://hub.docker.com/r/maclucky/derper/tags)
+[![GitHub Actions Workflow Status](https://github.com/mac-lucky/derper-docker/actions/workflows/docker-image.yml/badge.svg)](https://github.com/mac-lucky/derper-docker/actions/workflows/docker-image.yml)
+[![Platform](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-blue)](https://hub.docker.com/r/maclucky/derper/tags)
 
 # Setup
 
