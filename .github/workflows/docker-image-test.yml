@@ -31,4 +31,4 @@ jobs:
         }
       enable_schedule: true
       check_existing_image: true
-      registry_to_check: ghcr
+      registry_to_check: dockerhub
