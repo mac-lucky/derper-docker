@@ -1,16 +1,14 @@
 # Derper
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/maclucky/derper)](https://hub.docker.com/r/maclucky/derper)
-[![Docker Image Version](https://img.shields.io/docker/v/maclucky/derper/latest)](https://hub.docker.com/r/maclucky/derper/tags)
 [![GitHub Actions Workflow Status](https://github.com/mac-lucky/derper-docker/actions/workflows/docker-image.yml/badge.svg)](https://github.com/mac-lucky/derper-docker/actions/workflows/docker-image.yml)
-[![Platform](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-blue)](https://hub.docker.com/r/maclucky/derper/tags)
+[![Platform](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-blue)](https://github.com/mac-lucky/derper-docker/pkgs/container/derper)
 
 # Setup
 
 > required: set env `DERP_DOMAIN` to your domain
 
 ```bash
-docker run -e DERP_DOMAIN=derper.your-domain.com -p 80:80 -p 443:443 -p 3478:3478/udp maclucky/derper
+docker run -e DERP_DOMAIN=derper.your-domain.com -p 80:80 -p 443:443 -p 3478:3478/udp ghcr.io/mac-lucky/derper
 ```
 
 | env                    | required | description                                                                 | default value     |
