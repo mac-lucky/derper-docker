@@ -1,0 +1,15 @@
+name: Keepalive Workflow
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # Runs on the 1st of every month
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - uses: liskin/gh-workflow-keepalive@v1
