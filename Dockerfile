@@ -26,7 +26,8 @@ COPY --from=builder --chown=1000:1000 /go/bin/derper .
 
 USER 1000
 
-CMD /app/derper --hostname=$DERP_DOMAIN \
+CMD /app/derper -c /app/derper.key \
+    --hostname=$DERP_DOMAIN \
     --certmode=$DERP_CERT_MODE \
     --certdir=$DERP_CERT_DIR \
     --a=$DERP_ADDR \
