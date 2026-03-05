@@ -9,12 +9,13 @@ WORKDIR /app
 
 RUN apk --no-cache add ca-certificates && \
     adduser -D -u 1000 appuser && \
-    mkdir /app/certs && \
-    chown 1000:1000 /app/certs
+    mkdir /app/certs /app/state && \
+    chown 1000:1000 /app/certs /app/state
 
 ENV DERP_DOMAIN your-hostname.com
 ENV DERP_CERT_MODE letsencrypt
 ENV DERP_CERT_DIR /app/certs
+ENV DERP_STATE_DIR /app/state
 ENV DERP_ADDR :8443
 ENV DERP_STUN true
 ENV DERP_STUN_PORT 3478
@@ -26,7 +27,7 @@ COPY --from=builder --chown=1000:1000 /go/bin/derper .
 
 USER 1000
 
-CMD /app/derper -c $DERP_CERT_DIR/derper.key \
+CMD /app/derper -c $DERP_STATE_DIR/derper.key \
     --hostname=$DERP_DOMAIN \
     --certmode=$DERP_CERT_MODE \
     --certdir=$DERP_CERT_DIR \
