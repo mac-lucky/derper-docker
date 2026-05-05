@@ -36,4 +36,5 @@ CMD /app/derper -c $DERP_STATE_DIR/derper.key \
     --stun-port=$DERP_STUN_PORT \
     --http-port=$DERP_HTTP_PORT \
     --verify-clients=$DERP_VERIFY_CLIENTS \
-    --verify-client-url=$DERP_VERIFY_CLIENT_URL
+    --verify-client-url=$DERP_VERIFY_CLIENT_URL 2>&1 \
+    | awk '!/http: TLS handshake error from /'
