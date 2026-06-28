@@ -2,13 +2,7 @@ FROM golang:alpine AS builder
 WORKDIR /app
 
 ARG DERP_VERSION=latest
-# Build derper from the pinned tailscale release, but force-bump the vulnerable
-# transitive modules - upstream still pins older x/crypto and x/net.
-RUN go mod init derperbuild && \
-    go get tailscale.com@${DERP_VERSION} && \
-    go get golang.org/x/crypto@v0.53.0 && \
-    go get golang.org/x/net@v0.56.0 && \
-    go build -o /go/bin/derper tailscale.com/cmd/derper
+RUN go install tailscale.com/cmd/derper@${DERP_VERSION}
 
 FROM alpine:latest
 WORKDIR /app
