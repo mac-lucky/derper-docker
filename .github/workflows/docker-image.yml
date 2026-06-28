@@ -35,3 +35,4 @@ jobs:
       enable_schedule_build: true
       enable_security_scan: true
       platforms: "linux/amd64,linux/arm64"
+      govulncheck_binary: "/app/derper"
