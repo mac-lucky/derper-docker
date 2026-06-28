@@ -1,0 +1,16 @@
+# Accept-risk for vulnerabilities we cannot patch downstream.
+#
+# Upstream tailscale (cmd/derper) pins older golang.org/x/crypto (v0.50.0) and
+# golang.org/x/net (v0.53.0), which carry several GO-2026 advisories - criticals
+# GO-2026-5005/5006/5017/5019/5020/5021/5023/5026 and highs GO-2026-5013/5018.
+# derper is built with `go install` from the upstream tag, so these transitive
+# versions can't be bumped without a vendored build (which broke compilation).
+# The findings stay visible in the Security tab (SARIF is still uploaded).
+# Revisit when a tailscale release bumps x/crypto and x/net.
+ignore:
+  - package:
+      name: golang.org/x/crypto
+      type: go-module
+  - package:
+      name: golang.org/x/net
+      type: go-module
