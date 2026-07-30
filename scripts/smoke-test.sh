@@ -37,6 +37,10 @@ echo "smoke-testing $IMAGE"
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
   -keyout "$WORKDIR/$HOST.key" -out "$WORKDIR/$HOST.crt" \
   -subj "/CN=$HOST" -addext "subjectAltName=DNS:$HOST" 2>/dev/null
+# The container reads these as UID 1000, which is not the user running this
+# script. mktemp -d gives 0700, so the directory needs the traverse bit too --
+# chmod'ing only the files leaves the container with "permission denied".
+chmod 755 "$WORKDIR"
 chmod 644 "$WORKDIR/$HOST".*
 
 # --- 1. starts at all under no_new_privs -------------------------------------
@@ -62,7 +66,7 @@ if docker ps --filter "name=$CN" --filter status=running --format '{{.Names}}' |
   pass "starts under no-new-privileges + cap-drop ALL + read-only rootfs"
 else
   code="$(docker inspect -f '{{.State.ExitCode}}' "$CN" 2>/dev/null || echo '?')"
-  fail "container did not stay up under no-new-privileges (exit $code)"
+  fail "container did not stay up (exit $code) -- see logs below for the reason"
   if [ "$code" = "126" ]; then
     echo "  hint: exit 126 here means the binary carries file capabilities (setcap)."
     echo "        execve of such a binary returns EPERM under no_new_privs, so the"
