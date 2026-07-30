@@ -16,24 +16,22 @@ ENV DERP_DOMAIN=your-hostname.com
 ENV DERP_CERT_MODE=letsencrypt
 ENV DERP_CERT_DIR=/app/certs
 ENV DERP_STATE_DIR=/app/state
-ENV DERP_ADDR=:443
+ENV DERP_ADDR=:8443
 ENV DERP_STUN=true
 ENV DERP_STUN_PORT=3478
-ENV DERP_HTTP_PORT=80
+ENV DERP_HTTP_PORT=8080
 ENV DERP_VERIFY_CLIENTS=false
 ENV DERP_VERIFY_CLIENT_URL=""
 
 COPY --from=builder --chown=1000:1000 /go/bin/derper /app/derper
 COPY --chmod=755 entrypoint.sh /entrypoint.sh
 
-# Let UID 1000 bind :443 and :80. Inert under no_new_privs or with the
-# capability dropped, which is fine since those setups use high ports.
-RUN apk --no-cache add libcap-setcap && \
-    setcap cap_net_bind_service=+ep /app/derper && \
-    apk --no-cache del libcap-setcap
-
 USER 1000
 
-EXPOSE 80 443 3478/udp
+# Deliberately non-privileged. Do not setcap cap_net_bind_service on the binary
+# to reclaim :443/:80 -- execve of a file-capability binary returns EPERM under
+# no_new_privs, so the container cannot start at all under Kubernetes
+# allowPrivilegeEscalation: false or docker --security-opt no-new-privileges.
+EXPOSE 8080 8443 3478/udp
 
 ENTRYPOINT ["/entrypoint.sh"]
