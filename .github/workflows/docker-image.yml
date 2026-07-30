@@ -20,7 +20,23 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Gates publishing. Runs the image under no-new-privileges, which is the bit
+  # Kubernetes sets via allowPrivilegeEscalation: false -- a plain docker run
+  # will happily start images that cannot start in the cluster.
+  smoke-test:
+    name: Smoke test image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build image
+        run: docker build --load -t derper-smoke .
+
+      - name: Run smoke tests
+        run: ./scripts/smoke-test.sh derper-smoke
+
   build:
+    needs: smoke-test
     uses: mac-lucky/actions-shared-workflows/.github/workflows/docker-cicd-reusable.yml@master
     secrets:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
