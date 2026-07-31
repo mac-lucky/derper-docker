@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-# Runs the built image the way production runs it and fails if it misbehaves.
+# Runs an already-built image the way production runs it and fails if it
+# misbehaves. Does not build anything itself -- the caller builds the image
+# and passes its ref, either as $SMOKE_IMAGE (how the shared docker-cicd
+# reusable invokes this) or as the first argument (for a local run):
 #
-#   scripts/smoke-test.sh [image]     # default: derper-smoke
+#   docker build --load -t derper-smoke .
+#   SMOKE_IMAGE=derper-smoke scripts/smoke-test.sh
+#   scripts/smoke-test.sh derper-smoke
 #
 # The important flag is --security-opt no-new-privileges. Kubernetes sets the
 # same bit via allowPrivilegeEscalation: false, and it is the difference between
@@ -9,7 +14,7 @@
 # this image actually ships into.
 set -euo pipefail
 
-IMAGE="${1:-derper-smoke}"
+IMAGE="${1:-${SMOKE_IMAGE:-derper-smoke}}"
 HOST=derp.test
 # Container name and host port are both unique per run. `docker rm -f` returns
 # before the daemon has released either, so reusing them makes a run started

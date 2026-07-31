@@ -1,10 +1,10 @@
-FROM golang:alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
 
-ARG DERP_VERSION=latest
+ARG DERP_VERSION=v1.98.10
 RUN go install tailscale.com/cmd/derper@${DERP_VERSION}
 
-FROM alpine:latest
+FROM alpine:3.22
 WORKDIR /app
 
 RUN apk --no-cache add ca-certificates && \
