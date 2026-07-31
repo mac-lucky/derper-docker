@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'Dockerfile'
+      - 'entrypoint.sh'
+      - 'scripts/smoke-test.sh'
 
 jobs:
   tag:
