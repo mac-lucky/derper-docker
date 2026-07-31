@@ -1,0 +1,16 @@
+name: Auto Tag
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+
+jobs:
+  tag:
+    uses: mac-lucky/actions-shared-workflows/.github/workflows/auto-tag-reusable.yml@master
+    secrets:
+      TAG_PUSH_TOKEN: ${{ secrets.TAG_PUSH_TOKEN }}
+    with:
+      mode: upstream-arg
+      arg_name: DERP_VERSION
