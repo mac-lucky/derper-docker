@@ -7,7 +7,10 @@ RUN go install tailscale.com/cmd/derper@${DERP_VERSION}
 FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 WORKDIR /app
 
-RUN apk --no-cache add ca-certificates && \
+# apk upgrade first: the digest-pinned base can lag Alpine package fixes, and
+# upgrading at build picks them up without waiting for a base-image rebuild.
+RUN apk --no-cache upgrade && \
+    apk --no-cache add ca-certificates && \
     adduser -D -u 1000 appuser && \
     mkdir /app/certs /app/state && \
     chown 1000:1000 /app/certs /app/state
