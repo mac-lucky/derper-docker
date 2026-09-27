@@ -1,8 +1,13 @@
 FROM golang:1.27-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS builder
-WORKDIR /app
 
 ARG DERP_VERSION=v1.102.4
-RUN go install tailscale.com/cmd/derper@${DERP_VERSION}
+# go install from the module proxy carries no VCS info, so without the stamps
+# tailscale's version.Long() reports "<version>-ERR-BuildInfo". These are the
+# same stamps tailscale's build_dist.sh sets. Symbols stay in (no -s -w):
+# govulncheck's binary mode in CI reads them.
+RUN CGO_ENABLED=0 go install -trimpath \
+    -ldflags "-X tailscale.com/version.longStamp=${DERP_VERSION#v} -X tailscale.com/version.shortStamp=${DERP_VERSION#v}" \
+    tailscale.com/cmd/derper@${DERP_VERSION}
 
 FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 WORKDIR /app
