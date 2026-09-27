@@ -43,4 +43,10 @@ USER 1000
 # allowPrivilegeEscalation: false or docker --security-opt no-new-privileges.
 EXPOSE 8080 8443 3478/udp
 
+# The entrypoint only lets derper start in TLS mode, and TLS mode always runs
+# the HTTP-port listener, which answers /generate_204 ahead of any ACME or
+# redirect handling. That listener binds to the host part of DERP_ADDR, if any.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
+    CMD ["/bin/sh", "-c", "h=${DERP_ADDR%:*}; [ \"$DERP_HTTP_PORT\" = -1 ] || wget -q -O /dev/null \"http://${h:-127.0.0.1}:$DERP_HTTP_PORT/generate_204\" || exit 1"]
+
 ENTRYPOINT ["/entrypoint.sh"]
