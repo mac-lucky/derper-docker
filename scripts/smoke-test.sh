@@ -26,7 +26,7 @@ WORKDIR="$(mktemp -d)"
 FAILED=0
 
 cleanup() {
-  docker rm -f "$CN" "$CN-guard" >/dev/null 2>&1 || true
+  docker rm -f "$CN" >/dev/null 2>&1 || true
   rm -rf "$WORKDIR"
 }
 trap cleanup EXIT
@@ -51,19 +51,25 @@ chmod 644 "$WORKDIR/$HOST".*
 # --- 1. starts at all under no_new_privs -------------------------------------
 # A binary carrying file capabilities (setcap) fails execve with EPERM here and
 # the container dies with exit 126. That shipped once and took the relay down.
+# --home=blank is a container arg, asserted in step 2.
 docker run -d --name "$CN" \
   --security-opt no-new-privileges \
   --cap-drop ALL \
   --read-only \
   --tmpfs /app/state:uid=1000 \
+  --health-start-interval=1s \
   -p 127.0.0.1::8443 \
   -e DERP_DOMAIN="$HOST" \
   -e DERP_CERT_MODE=manual \
   -v "$WORKDIR:/app/certs:ro" \
-  "$IMAGE" >/dev/null
+  "$IMAGE" --home=blank >/dev/null
 
+# Logs are read into a variable before grepping, never piped into grep -q:
+# grep -q exits on the first match, docker logs then dies of SIGPIPE, and
+# pipefail turns a match into a failure whenever the timing lines up.
 for _ in $(seq 30); do
-  docker logs "$CN" 2>&1 | grep -q 'serving on' && break
+  logs="$(docker logs "$CN" 2>&1 || true)"
+  grep -q 'serving on' <<<"$logs" && break
   sleep 1
 done
 
@@ -84,25 +90,47 @@ fi
 # --- 2. TLS is actually served ------------------------------------------------
 # Not cosmetic: derper serves plain HTTP unless the port is 443 or certmode is
 # manual, and it does so silently.
-if docker logs "$CN" 2>&1 | grep -q 'serving on :8443 with TLS'; then
+if grep -q 'serving on :8443 with TLS' <<<"$logs"; then
   pass "serving on :8443 with TLS"
 else
   fail "no 'with TLS' in logs -- derper may have fallen back to plain HTTP"
-  docker logs "$CN" 2>&1 | tail -10
+  tail -10 <<<"$logs"
 fi
 
 # --resolve so SNI is the cert hostname; against localhost derper answers
 # "cert mismatch with hostname" and this would fail for the wrong reason.
 HTTPS_PORT="$(docker port "$CN" 8443/tcp | head -1 | sed 's/.*://')"
 code="$(curl -sk --max-time 20 --resolve "$HOST:$HTTPS_PORT:127.0.0.1" \
-  -o /dev/null -w '%{http_code}' "https://$HOST:$HTTPS_PORT/" || echo 000)"
+  -o "$WORKDIR/home.html" -w '%{http_code}' "https://$HOST:$HTTPS_PORT/" || echo 000)"
 if [ "$code" = "200" ]; then
   pass "https GET / returned 200"
 else
   fail "https GET / returned $code, expected 200"
 fi
 
-# --- 3. derper is PID 1 -------------------------------------------------------
+# The default home page says "DERP"; --home=blank serves an empty body. An
+# empty body is the proof that container args reach derper.
+if [ "$code" = "200" ] && [ ! -s "$WORKDIR/home.html" ]; then
+  pass "container args reach derper (--home=blank served an empty page)"
+else
+  fail "GET / was not blank -- container args are not reaching derper"
+  head -c 200 "$WORKDIR/home.html" 2>/dev/null; echo
+fi
+
+# --- 3. the image HEALTHCHECK passes ------------------------------------------
+for _ in $(seq 20); do
+  health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$CN" 2>/dev/null || true)"
+  [ "$health" = "healthy" ] && break
+  sleep 1
+done
+if [ "$health" = "healthy" ]; then
+  pass "healthcheck reports healthy"
+else
+  fail "healthcheck status is '${health:-none}', expected healthy"
+  docker inspect -f '{{if .State.Health}}{{range .State.Health.Log}}{{.ExitCode}} {{.Output}}{{end}}{{end}}' "$CN" 2>/dev/null | tail -5
+fi
+
+# --- 4. derper is PID 1 -------------------------------------------------------
 # The entrypoint must exec, not leave a shell wrapping it, or exit codes and
 # signals are the shell's rather than derper's.
 if docker exec "$CN" ps 2>/dev/null | awk '$1 == "1"' | grep -q '/app/derper'; then
@@ -112,7 +140,7 @@ else
   docker exec "$CN" ps 2>&1 | head -5
 fi
 
-# --- 4. SIGTERM reaches it ----------------------------------------------------
+# --- 5. SIGTERM reaches it ----------------------------------------------------
 start=$(date +%s)
 docker stop "$CN" >/dev/null 2>&1
 elapsed=$(( $(date +%s) - start ))
@@ -122,30 +150,40 @@ else
   fail "took ${elapsed}s to stop -- SIGTERM is not reaching derper (10s SIGKILL timeout)"
 fi
 
-# --- 5. the letsencrypt/port guard fires --------------------------------------
-# letsencrypt on a non-443 port makes derper serve plain HTTP and never request
-# a certificate, so the entrypoint must refuse to start instead.
-docker run -d --name "$CN-guard" \
-  -e DERP_DOMAIN="$HOST" -e DERP_CERT_MODE=letsencrypt -e DERP_ADDR=:8443 \
-  "$IMAGE" >/dev/null
-guard_code="$(docker wait "$CN-guard" 2>/dev/null || echo 999)"
-
-# `docker logs` right after `docker wait` can come back before the container's
-# stderr has been flushed, so retry rather than reading once. Without this the
-# assertion intermittently misses a message that is plainly there.
-guard_log=""
-for _ in 1 2 3 4 5; do
-  guard_log="$(docker logs "$CN-guard" 2>&1 || true)"
-  [ -n "$guard_log" ] && break
-  sleep 1
-done
-
-if [ "$guard_code" = "1" ] && printf '%s' "$guard_log" | grep -q 'needs DERP_ADDR on port 443'; then
-  pass "guard rejects letsencrypt on a non-443 port"
+# --- 6. the version is stamped -----------------------------------------------
+# Without the -X stamps in the Dockerfile this says "<version>-ERR-BuildInfo".
+version="$(docker run --rm --entrypoint /app/derper "$IMAGE" --version 2>&1 || true)"
+if [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+ && $version != *ERR* ]]; then
+  pass "derper --version is stamped ($version)"
 else
-  fail "guard did not fire as expected (exit $guard_code, wanted 1 + refusal message)"
-  printf '%s\n' "$guard_log" | tail -5
+  fail "derper --version returned '$version', expected a clean x.y.z"
 fi
+
+# --- 7. the entrypoint guards fire --------------------------------------------
+# letsencrypt or gcp on a non-443 port makes derper serve plain HTTP and never
+# request a certificate, and an empty DERP_DOMAIN has nothing to get one for,
+# so the entrypoint must refuse to start instead.
+# Attached `docker run` returns only once the output has been read, unlike
+# `docker logs` after `docker wait`, which could miss the refusal message.
+#   expect_refusal <label> <expected message> <docker run args...>
+expect_refusal() {
+  local label="$1" want="$2" code=0 log
+  shift 2
+  log="$(docker run --rm "$@" "$IMAGE" 2>&1)" || code=$?
+  if [ "$code" = 1 ] && grep -q "$want" <<<"$log"; then
+    pass "guard rejects $label"
+  else
+    fail "guard did not reject $label (exit $code, wanted 1 + '$want')"
+    tail -5 <<<"$log"
+  fi
+}
+
+expect_refusal "letsencrypt on a non-443 port" 'letsencrypt needs DERP_ADDR on port 443' \
+  -e DERP_DOMAIN="$HOST" -e DERP_CERT_MODE=letsencrypt -e DERP_ADDR=:8443
+expect_refusal "gcp on a non-443 port" 'gcp needs DERP_ADDR on port 443' \
+  -e DERP_DOMAIN="$HOST" -e DERP_CERT_MODE=gcp -e DERP_ADDR=:8443
+expect_refusal "an empty DERP_DOMAIN" 'DERP_DOMAIN is not set' \
+  -e DERP_CERT_MODE=manual
 
 echo
 if [ "$FAILED" -eq 0 ]; then
