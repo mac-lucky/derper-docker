@@ -15,7 +15,8 @@ RUN apk --no-cache upgrade && \
     mkdir /app/certs /app/state && \
     chown 1000:1000 /app/certs /app/state
 
-ENV DERP_DOMAIN=your-hostname.com
+# Required; the entrypoint refuses to start without it.
+ENV DERP_DOMAIN=""
 ENV DERP_CERT_MODE=letsencrypt
 ENV DERP_CERT_DIR=/app/certs
 ENV DERP_STATE_DIR=/app/state
