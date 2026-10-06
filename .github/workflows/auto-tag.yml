@@ -8,7 +8,7 @@ on:
       - 'entrypoint.sh'
       - 'scripts/smoke-test.sh'
 
-# The tag is pushed with TAG_PUSH_TOKEN; the job token only reads.
+# The tag is pushed with a mac-lucky-ci GitHub App token; the job token only reads.
 permissions:
   contents: read
 
@@ -16,7 +16,8 @@ jobs:
   tag:
     uses: mac-lucky/actions-shared-workflows/.github/workflows/auto-tag-reusable.yml@master
     secrets:
-      TAG_PUSH_TOKEN: ${{ secrets.TAG_PUSH_TOKEN }}
+      CI_APP_CLIENT_ID: ${{ secrets.CI_APP_CLIENT_ID }}
+      CI_APP_PRIVATE_KEY: ${{ secrets.CI_APP_PRIVATE_KEY }}
     with:
       mode: upstream-arg
       arg_name: DERP_VERSION
