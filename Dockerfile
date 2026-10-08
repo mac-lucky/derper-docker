@@ -14,6 +14,8 @@ WORKDIR /app
 
 # apk upgrade first: the digest-pinned base can lag Alpine package fixes, and
 # upgrading at build picks them up without waiting for a base-image rebuild.
+# PKG_REFRESH is new on every CI build, so this RUN never comes from the layer cache.
+ARG PKG_REFRESH
 RUN apk --no-cache upgrade && \
     apk --no-cache add ca-certificates && \
     adduser -D -u 1000 appuser && \
