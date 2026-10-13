@@ -8,7 +8,6 @@ on:
     paths:
       - 'Dockerfile'
       - 'entrypoint.sh'
-      - 'scripts/smoke-test.sh'
   # The nightly GHCR scan in mac-lucky/forgejo-fleet-ops dispatches a -rN
   # rebuild tag when a rebuild alone would clear the image's findings (base
   # packages, a floating Go patch), and finds its own runs again by the run
@@ -24,6 +23,11 @@ on:
 # The tag is pushed with a mac-lucky-ci GitHub App token; the job token only reads.
 permissions:
   contents: read
+
+# A dispatch and a push racing would compute the same tag; queue them instead.
+concurrency:
+  group: auto-tag
+  cancel-in-progress: false
 
 jobs:
   tag:
