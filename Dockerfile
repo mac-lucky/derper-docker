@@ -1,4 +1,4 @@
-FROM golang:1.27-alpine@sha256:eb61c3873c97416fff0116553fff65d67a3549f72e11d9758849a689cdd8b523 AS builder
+FROM golang:1.27-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS builder
 
 ARG DERP_VERSION=v1.104.5
 # go install from the module proxy carries no VCS info, so without the stamps
@@ -9,7 +9,7 @@ RUN CGO_ENABLED=0 go install -trimpath \
     -ldflags "-X tailscale.com/version.longStamp=${DERP_VERSION#v} -X tailscale.com/version.shortStamp=${DERP_VERSION#v}" \
     tailscale.com/cmd/derper@${DERP_VERSION}
 
-FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 WORKDIR /app
 
 # apk upgrade first: the digest-pinned base can lag Alpine package fixes, and
