@@ -1,6 +1,6 @@
 FROM golang:1.27-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS builder
 
-ARG DERP_VERSION=v1.104.5
+ARG DERP_VERSION=v1.104.6
 # go install from the module proxy carries no VCS info, so without the stamps
 # tailscale's version.Long() reports "<version>-ERR-BuildInfo". These are the
 # same stamps tailscale's build_dist.sh sets. Symbols stay in (no -s -w):
